@@ -35,8 +35,8 @@ commands:
           "servers": {
             "bootstrap-tool": {
               "type": "stdio",
-              "command": "npx",
-              "args": ["-y", "tsx", "src/index.ts"],
+              "command": "node",
+              "args": ["dist/index.js"],
               "cwd": "$MCP_DIR"
             }
           }
