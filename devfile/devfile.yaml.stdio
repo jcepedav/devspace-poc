@@ -1,0 +1,50 @@
+schemaVersion: 2.2.0
+metadata:
+  name: mcp-npx-workspace
+components:
+  - name: dev-runtime
+    container:
+      image: quay.io/devfile/universal-developer-image:ubi9-latest
+      mountSources: true
+      memoryLimit: 3Gi
+      cpuLimit: 2000m
+
+commands:
+  - id: setup-mcp-npx
+    exec:
+      component: dev-runtime
+      commandLine: |
+        set -e
+
+        # Busca la carpeta del servidor MCP stdio dentro de /projects.
+        MCP_DIR="$(find /projects -maxdepth 4 -type d -name mcp-server-npx | head -n 1)"
+        if [ -z "$MCP_DIR" ]; then
+          echo "No se encontro mcp-server-npx en /projects"
+          exit 1
+        fi
+
+        cd "$MCP_DIR"
+        npm install
+        npm run build
+
+        CONFIG_DIR="/home/user/.vscode-remote/data/User"
+        mkdir -p "$CONFIG_DIR"
+
+        cat > "$CONFIG_DIR/mcp.json" << EOF
+        {
+          "servers": {
+            "bootstrap-tool": {
+              "type": "stdio",
+              "command": "node",
+              "args": ["dist/index.js"],
+              "cwd": "$MCP_DIR"
+            }
+          }
+        }
+        EOF
+
+        echo "MCP stdio configurado en $CONFIG_DIR/mcp.json"
+
+events:
+  postStart:
+    - setup-mcp-npx
