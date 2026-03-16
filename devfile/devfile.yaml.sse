@@ -21,8 +21,6 @@ components:
       env:
         - name: PORT
           value: "3000"
-        - name: PROJECTS_ROOT
-          value: "/projects"
       endpoints:
         - name: mcp-sse
           targetPort: 3000
