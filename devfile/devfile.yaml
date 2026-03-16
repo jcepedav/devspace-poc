@@ -27,7 +27,8 @@ components:
       endpoints:
         - name: mcp-sse
           targetPort: 3000
-          exposure: internal # Solo accesible dentro del Pod
+          exposure: public
+          protocol: https
 
 commands:
   # 3. Comando para inyectar la configuración del MCP en VS Code
@@ -35,20 +36,32 @@ commands:
     exec:
       component: java-runtime
       commandLine: |
-        # Ruta para la configuración de la extensión (usando Cline como ejemplo común)
-        # Si usas otra extensión, la ruta del JSON podría variar ligeramente
-        CONFIG_DIR="/home/user/.vscode-remote/data/User/globalStorage/saoudrizwan.claude-dev/settings"
+        # Ruta de configuración de usuario en VS Code remoto
+        CONFIG_DIR="/home/user/.vscode-remote/data/User"
         mkdir -p $CONFIG_DIR
-        
-        echo '{
-          "mcpServers": {
+
+        # En navegador (LocalWebWorker), localhost no apunta al contenedor.
+        # Usar URL pública del endpoint y fallar si no está disponible.
+        MCP_BASE_URL="${MCP_SSE:-${MCP_SSE_URL:-}}"
+        if [ -z "$MCP_BASE_URL" ]; then
+          echo "❌ No se encontró MCP_SSE/MCP_SSE_URL. Evitando configurar localhost en cliente web."
+          exit 1
+        fi
+        MCP_URL="${MCP_BASE_URL%/}/sse"
+
+        # Formato mcp.json de usuario (estandar)
+        cat > $CONFIG_DIR/mcp.json << EOF
+        {
+          "servers": {
             "bootstrap-tool": {
-              "url": "http://localhost:3000/sse"
+              "type": "sse",
+              "url": "$MCP_URL"
             }
           }
-        }' > $CONFIG_DIR/cline_mcp_settings.json
-        
-        echo "✅ MCP Server configurado y vinculado vía SSE."
+        }
+        EOF
+
+        echo "✅ MCP Server configurado con URL pública: $MCP_URL"
 
 events:
   # Se ejecuta automáticamente al levantar el workspace
