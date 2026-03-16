@@ -23,7 +23,7 @@ components:
         - name: PROJECTS_ROOT
           value: "/projects"
       endpoints:
-        - name: mcp-sse-endpoint
+        - name: mcp-sse
           targetPort: 3000
           exposure: internal # Solo accesible dentro del Pod
 
