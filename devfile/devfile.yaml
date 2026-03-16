@@ -1,0 +1,54 @@
+schemaVersion: 2.2.0
+metadata:
+  name: springboot-mcp-bootstrap-env
+components:
+  # 1. Contenedor de Desarrollo (IDE + Java 21)
+  - name: java-runtime
+    container:
+      image: quay.io/devspaces/vscode-java21:latest
+      mountSources: true
+      memoryLimit: 3Gi
+      cpuLimit: 2000m
+
+  # 2. Tu Servidor MCP como Sidecar (Node.js)
+  - name: mcp-server-sidecar
+    container:
+      image: quay.io/jcepedav/mcp-server:latest
+      mountSources: true # Compartir /projects para que pueda crear archivos
+      memoryLimit: 512Mi
+      cpuLimit: 500m
+      env:
+        - name: PORT
+          value: "3000"
+        - name: PROJECTS_ROOT
+          value: "/projects"
+      endpoints:
+        - name: mcp-sse-endpoint
+          targetPort: 3000
+          exposure: internal # Solo accesible dentro del Pod
+
+commands:
+  # 3. Comando para inyectar la configuración del MCP en VS Code
+  - id: auto-configure-mcp
+    exec:
+      component: java-runtime
+      commandLine: |
+        # Ruta para la configuración de la extensión (usando Cline como ejemplo común)
+        # Si usas otra extensión, la ruta del JSON podría variar ligeramente
+        CONFIG_DIR="/home/user/.vscode-remote/data/User/globalStorage/saoudrizwan.claude-dev/settings"
+        mkdir -p $CONFIG_DIR
+        
+        echo '{
+          "mcpServers": {
+            "bootstrap-tool": {
+              "url": "http://localhost:3000/sse"
+            }
+          }
+        }' > $CONFIG_DIR/cline_mcp_settings.json
+        
+        echo "✅ MCP Server configurado y vinculado vía SSE."
+
+events:
+  # Se ejecuta automáticamente al levantar el workspace
+  postStart:
+    - auto-configure-mcp
