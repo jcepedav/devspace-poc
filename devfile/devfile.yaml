@@ -16,12 +16,14 @@ components:
       image: quay.io/jcepedav/mcp-server:latest
       mountSources: true # Compartir /projects para que pueda crear archivos
       memoryLimit: 512Mi
-      cpuLimit: 500m
+      cpuLimit: 300m
       env:
         - name: PORT
           value: "3000"
-        - name: PROJECTS_ROOT
-          value: "/projects"
+        # 4. Configuración del MCP para que sepa dónde encontrar los proyectos (NO USAR en DevSpaces variable protegida, dependiendo de tu implementación)
+        # Si tu servidor MCP necesita acceso a los proyectos, puedes montar el mismo volumen y configurar la ruta
+#        - name: PROJECTS_ROOT
+#          value: "/projects"
       endpoints:
         - name: mcp-sse
           targetPort: 3000
