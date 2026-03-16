@@ -40,14 +40,7 @@ commands:
         CONFIG_DIR="/home/user/.vscode-remote/data/User"
         mkdir -p $CONFIG_DIR
 
-        # En navegador (LocalWebWorker), localhost no apunta al contenedor.
-        # Usar URL pública del endpoint y fallar si no está disponible.
-        MCP_BASE_URL="${MCP_SSE:-${MCP_SSE_URL:-}}"
-        if [ -z "$MCP_BASE_URL" ]; then
-          echo "❌ No se encontró MCP_SSE/MCP_SSE_URL. Evitando configurar localhost en cliente web."
-          exit 1
-        fi
-        MCP_URL="${MCP_BASE_URL%/}/sse"
+        MCP_URL="http://localhost:3000/sse"
 
         # Formato mcp.json de usuario (estandar)
         cat > $CONFIG_DIR/mcp.json << EOF
