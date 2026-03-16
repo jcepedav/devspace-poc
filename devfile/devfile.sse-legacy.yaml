@@ -1,0 +1,64 @@
+schemaVersion: 2.2.0
+metadata:
+  name: mcp-sse-sidecar-legacy
+components:
+  # Estrategia legacy SSE + sidecar.
+  # Este devfile mantiene un contenedor principal y un sidecar que expone /sse en 3000.
+  - name: java-runtime
+    container:
+      image: quay.io/devfile/universal-developer-image:ubi9-latest
+      mountSources: true
+      memoryLimit: 3Gi
+      cpuLimit: 2000m
+
+  # Sidecar con el servidor MCP por SSE.
+  - name: mcp-server-sidecar
+    container:
+      image: quay.io/jcepedav/mcp-server:latest
+      mountSources: true
+      memoryLimit: 512Mi
+      cpuLimit: 300m
+      env:
+        - name: PORT
+          value: "3000"
+        - name: PROJECTS_ROOT
+          value: "/projects"
+      endpoints:
+        - name: mcp-sse
+          targetPort: 3000
+          exposure: public
+          protocol: https
+
+commands:
+  # Escribe la configuracion de usuario para consumir el sidecar SSE.
+  - id: auto-configure-mcp-sse
+    exec:
+      component: java-runtime
+      commandLine: |
+        set -e
+
+        # Configuracion de usuario en VS Code remoto.
+        CONFIG_DIR="/home/user/.vscode-remote/data/User"
+        mkdir -p "$CONFIG_DIR"
+
+        # En esta estrategia, el cliente MCP corre dentro del mismo workspace y usa localhost.
+        MCP_URL="http://localhost:3000/sse"
+
+        cat > "$CONFIG_DIR/mcp.json" << EOF
+        {
+          "servers": {
+            "bootstrap-tool": {
+              "type": "sse",
+              "url": "$MCP_URL"
+            }
+          }
+        }
+        EOF
+
+        echo "✅ mcp.json configurado para SSE: $MCP_URL"
+        echo "Tip: valida con 'curl -i http://localhost:3000/sse' desde java-runtime"
+
+events:
+  # Se ejecuta automaticamente al levantar el workspace.
+  postStart:
+    - auto-configure-mcp-sse
